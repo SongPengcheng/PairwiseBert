@@ -10,7 +10,6 @@ import torch
 import argparse
 import json
 import shutil
-from model import SemSimModel
 from packaging import version
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
@@ -22,6 +21,7 @@ from transformers.data.data_collator import DataCollator, DefaultDataCollator
 from transformers.optimization import AdamW,get_linear_schedule_with_warmup
 from transformers.modeling_utils import PreTrainedModel
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR, EvalPrediction, PredictionOutput, TrainOutput
+from transformers import BertForSequenceClassification, BertConfig
 from typing import Optional, Union, Any, Dict, List, NewType, Tuple
 from tqdm.auto import tqdm, trange
 from dataclasses import dataclass
@@ -62,7 +62,7 @@ class Trainer(nn.Module):
     def __init__(
             self,
             args: argparse.ArgumentParser,
-            model: SemSimModel = None,
+            model: BertForSequenceClassification = None,
             data_collator: Optional[DataCollator] = None,
             train_dataset: Optional[Dataset] = None,
             eval_dataset: Optional[Dataset] = None,

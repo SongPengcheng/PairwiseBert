@@ -7,7 +7,6 @@
 # @Desn    ：
 import pbert_argparse
 from SemDataset import PairwiseSemSimDataset
-from model import SemSimModel
 from trainer import Trainer
 import logging
 logger = logging.getLogger(__name__)
