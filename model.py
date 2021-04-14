@@ -14,8 +14,8 @@ from SemDataset import PairwiseSemSimDataset
 class SemSimModel(nn.Module):
     def __init__(self, model_path, out_dim=1, dropout=0.1):
         super(SemSimModel, self).__init__()
-        self.bert_config = BertConfig.from_pretrained(model_path + 'config.json')
-        self.bert = BertForSequenceClassification.from_pretrained(model_path + 'pytorch_model.bin',
+        self.bert_config = BertConfig.from_pretrained(model_path)
+        self.bert = BertForSequenceClassification.from_pretrained(model_path,
                                                                   config=self.bert_config)
     def forward(
             self,
