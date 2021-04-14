@@ -233,7 +233,7 @@ class Trainer(nn.Module):
         )
 
         logger.info("***** Running training *****")
-        logger.info("  Num datas = %d", self.num_examples(train_dataset))
+        logger.info("  Num datas = %d",len(train_dataset))
         logger.info("  Num examples = %d", self.num_examples(train_dataloader))
         logger.info("  Num Epochs = %d", num_train_epochs)
         logger.info("  Instantaneous batch size per device = %d", self.args.per_device_train_batch_size)
