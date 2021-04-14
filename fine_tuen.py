@@ -9,6 +9,14 @@ import pbert_argparse
 from SemDataset import PairwiseSemSimDataset
 from model import SemSimModel
 from trainer import Trainer
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO,
+    )
+logger.info("Training Bert with Pairwise Strategy")
 parse = pbert_argparse.parse
 args = parse.parse_args()
 args.data_dir = "data"

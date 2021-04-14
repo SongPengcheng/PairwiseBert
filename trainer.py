@@ -222,7 +222,6 @@ class Trainer(nn.Module):
             pairwise_dataset=train_dataset,
             batchsize=self.args.train_batch_size
         )
-        # 参与训练的数据量
         t_total = int(len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs)
         num_train_epochs = self.args.num_train_epochs
         optimizer, scheduler = self.get_optimizer(num_training_steps=t_total)
