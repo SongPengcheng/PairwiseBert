@@ -38,6 +38,8 @@ train_dataset = PairwiseSemSimDataset(
     max_seq_length=args.max_seq_length,
     mode="train"
 )
-model = SemSimModel(model_path=args.model_name_or_path)
+from transformers import BertForSequenceClassification, BertConfig
+bert_config = BertConfig.from_pretrained(args.model_name_or_path)
+model = BertForSequenceClassification.from_pretrained(args.model_name_or_path,config=bert_config)
 trainer = Trainer(args=args, model=model, train_dataset=train_dataset)
 trainer.train()
