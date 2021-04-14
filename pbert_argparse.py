@@ -108,7 +108,7 @@ TrainArgsGroup.add_argument(
     '--num_train_epochs', type=float, default=3.0
 )
 TrainArgsGroup.add_argument(
-    '--max_steps', type=int, default=1
+    '--max_steps', type=int, default=-1
 )
 TrainArgsGroup.add_argument(
     '--warmup_steps', type=int, default=0
