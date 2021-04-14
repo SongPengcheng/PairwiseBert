@@ -199,7 +199,7 @@ class SemSimProcessor(DataProcessor):
 class PairwiseSemSimProcessor(SemSimProcessor):
     def get_labels(self):
         """See base class."""
-        return ["0", "1"]
+        return ["0", "1", "2", "3", "4", "5"]
 
     def _create_examples(self, lines, set_type):
         """Creates examples for the training, dev and test sets."""
@@ -219,7 +219,7 @@ class OutputMode(Enum):
     regression = "regression"
 
 tasks_num_labels = {
-    "sim": 2,
+    "sim": 6,
 }
 
 processors = {
