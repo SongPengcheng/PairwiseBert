@@ -192,9 +192,6 @@ class Trainer(nn.Module):
     def _log(self, logs: Dict[str, float], iterator: Optional[tqdm] = None) -> None:
         if self.epoch is not None:
             logs["epoch"] = self.epoch
-        if self.tb_writer:
-            for k, v in logs.items():
-                self.tb_writer.add_scalar(k, v, self.global_step)
         output = json.dumps({**logs, **{"step": self.global_step}})
         if iterator is not None:
             iterator.write(output)
@@ -233,7 +230,6 @@ class Trainer(nn.Module):
         )
 
         logger.info("***** Running training *****")
-        logger.info("  Num datas = %d",len(train_dataset))
         logger.info("  Num examples = %d", self.num_examples(train_dataloader))
         logger.info("  Num Epochs = %d", num_train_epochs)
         logger.info("  Instantaneous batch size per device = %d", self.args.per_device_train_batch_size)
