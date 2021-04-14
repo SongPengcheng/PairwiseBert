@@ -231,7 +231,9 @@ class Trainer(nn.Module):
                 * self.args.gradient_accumulation_steps
                 * (torch.distributed.get_world_size() if self.args.local_rank != -1 else 1)
         )
+
         logger.info("***** Running training *****")
+        logger.info("  Num datas = %d", self.num_examples(train_dataset))
         logger.info("  Num examples = %d", self.num_examples(train_dataloader))
         logger.info("  Num Epochs = %d", num_train_epochs)
         logger.info("  Instantaneous batch size per device = %d", self.args.per_device_train_batch_size)
