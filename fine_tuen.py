@@ -19,7 +19,7 @@ logger.info("Training Bert with Pairwise Strategy")
 parse = pbert_argparse.parse
 args = parse.parse_args()
 args.data_dir = "data"
-args.model_name_or_path = "output/checkpoint-9000/"
+args.model_name_or_path = "output/checkpoint-6000/"
 args.train_batch_size = 64
 args.dev_batch_size = 8
 args.learning_rate = 2e-5
