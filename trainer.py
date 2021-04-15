@@ -232,7 +232,7 @@ class Trainer(nn.Module):
         checkpoints_sorted = [checkpoint[1] for checkpoint in checkpoints_sorted]
         return checkpoints_sorted
 
-    def train(self):
+    def train(self, model_path:str):
         train_dataset = self.train_dataset
         train_dataloader = self.get_pairwise_dataloader(
             pairwise_dataset=train_dataset,
@@ -241,6 +241,17 @@ class Trainer(nn.Module):
         t_total = int(len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs)
         num_train_epochs = self.args.num_train_epochs
         optimizer, scheduler = self.get_optimizer(num_training_steps=t_total)
+        if (
+            model_path is not None
+            and os.path.isfile(os.path.join(model_path, "optimizer.pt"))
+            and os.path.isfile(os.path.join(model_path, "scheduler.pt"))
+        ):
+            # Load in optimizer and scheduler states
+            optimizer.load_state_dict(
+                torch.load(os.path.join(model_path, "optimizer.pt"), map_location=self.args.device)
+            )
+            scheduler.load_state_dict(torch.load(os.path.join(model_path, "scheduler.pt")))
+
         # train
         total_train_batch_size = (
                 self.args.train_batch_size
@@ -260,6 +271,23 @@ class Trainer(nn.Module):
         self.epoch = 0
         epochs_trained = 0
         steps_trained_in_current_epoch = 0
+
+        if model_path is not None:
+            # set global_step to global_step of last saved checkpoint from model path
+            try:
+                self.global_step = int(model_path.split("-")[-1].split("/")[0])
+                epochs_trained = self.global_step // (len(train_dataloader) // self.args.gradient_accumulation_steps)
+                steps_trained_in_current_epoch = self.global_step % (
+                    len(train_dataloader) // self.args.gradient_accumulation_steps
+                )
+
+                logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+                logger.info("  Continuing training from epoch %d", epochs_trained)
+                logger.info("  Continuing training from global step %d", self.global_step)
+                logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+            except ValueError:
+                self.global_step = 0
+                logger.info("  Starting fine-tuning.")
 
         tr_loss = 0.0
         logging_loss = 0.0

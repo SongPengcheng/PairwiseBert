@@ -19,7 +19,7 @@ logger.info("Training Bert with Pairwise Strategy")
 parse = pbert_argparse.parse
 args = parse.parse_args()
 args.data_dir = "data"
-args.model_name_or_path = "bert-base-chinese"
+args.model_name_or_path = "output/checkpoint-9000"
 args.train_batch_size = 64
 args.dev_batch_size = 8
 args.learning_rate = 2e-5
@@ -28,7 +28,7 @@ args.do_train = True
 args.do_eval = False
 args.do_predict = False
 args.save_steps = 1000
-args.output_dir = "/content/drive/MyDrive/output"
+args.output_dir = "output"
 args.save_total_limit = 3
 args.num_train_epochs = 3
 train_dataset = PairwiseSemSimDataset(
@@ -41,4 +41,4 @@ from transformers import BertForSequenceClassification, BertConfig
 bert_config = BertConfig.from_pretrained(args.model_name_or_path)
 model = BertForSequenceClassification.from_pretrained(args.model_name_or_path,config=bert_config)
 trainer = Trainer(args=args, model=model, train_dataset=train_dataset)
-trainer.train()
+trainer.train(args.model_name_or_path)
