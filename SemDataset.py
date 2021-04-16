@@ -69,8 +69,8 @@ class PairwiseSemSimDataset(Dataset):
         self.tokenizer = tokenizer
         self.label_list = self.processor.get_labels()
         self.max_seq_length = args.max_seq_length
-        self.features = self.getFeatures(mode)
         self.limit_length = limit_length
+        self.features = self.getFeatures(mode)
         self.X1, self.X2, self.Y, self.weight = self._transform_pairwise()
 
     def getFeatures(self,mode):
