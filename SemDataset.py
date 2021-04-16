@@ -41,7 +41,7 @@ class SemSimDataset(Dataset):
             examples,
             self.tokenizer,
             max_length=args.max_seq_length,
-            label_list=args.label_list,
+            label_list=self.label_list,
             output_mode=self.output_mode,
         )
 
@@ -63,7 +63,8 @@ class PairwiseSemSimDataset(Dataset):
             mode: str = "train"
     ):
         super(PairwiseSemSimDataset, self).__init__()
-        self.data_path = args.data_dir
+        self.args = args
+        self.data_path = self.args.data_dir
         self.processor = PairwiseSemSimProcessor()
         self.output_mode = "classification"
         self.tokenizer = tokenizer
