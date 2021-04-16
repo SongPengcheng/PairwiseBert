@@ -6,6 +6,7 @@
 # @Software: PyCharm
 # @Desn    ：
 
+import argparse
 import numpy as np
 import math
 from torch.utils.data.dataset import Dataset
@@ -17,32 +18,29 @@ from transformers.data.processors.utils import InputFeatures
 class SemSimDataset(Dataset):
     def __init__(
             self,
-            data_path: str = None,
-            limit_length: Optional[int] = None,
-            max_seq_length: Optional[int] = None,
+            args: argparse.ArgumentParser,
             tokenizer: BertTokenizer = None,
             mode: str = "train"
     ):
         super(SemSimDataset,self).__init__()
-        self.data_path = data_path
+        self.data_path = args.data_dir
         self.tokenizer = tokenizer
         self.processor = SemSimProcessor()
         self.output_mode = "classification"
-        label_list = self.processor.get_labels()
-        self.label_list = label_list
+        self.label_list = self.processor.get_labels()
         if mode == "dev":
             examples = self.processor.get_dev_examples(self.data_path)
         elif mode == "test":
             examples = self.processor.get_test_examples(self.data_path)
         else:
             examples = self.processor.get_train_examples(self.data_path)
-        if limit_length is not None:
-            examples = examples[:limit_length]
+        if args.limit_length is not None:
+            examples = examples[:args.limit_length]
         self.features = glue_convert_examples_to_features(
             examples,
             self.tokenizer,
-            max_length=max_seq_length,
-            label_list=label_list,
+            max_length=args.max_seq_length,
+            label_list=args.label_list,
             output_mode=self.output_mode,
         )
 
@@ -58,21 +56,18 @@ class SemSimDataset(Dataset):
 class PairwiseSemSimDataset(Dataset):
     def __init__(
             self,
-            data_path: str = None,
+            args: argparse.ArgumentParser = None,
             tokenizer: BertTokenizer = None,
-            limit_length: Optional[int] = None,
-            max_seq_length: Optional[int] = None,
             mode: str = "train"
     ):
         super(PairwiseSemSimDataset, self).__init__()
-        self.data_path = data_path
+        self.data_path = args.data_dir
         self.processor = PairwiseSemSimProcessor()
         self.output_mode = "classification"
         self.tokenizer = tokenizer
-        label_list = self.processor.get_labels()
-        self.label_list = label_list
-        self.limit_length = limit_length
-        self.max_seq_length = max_seq_length
+        self.label_list = self.processor.get_labels()
+        self.limit_length = args.limit_length
+        self.max_seq_length = args.max_seq_length
         self.features = self.getFeatures(mode)
         self.X1, self.X2, self.Y, self.weight = self._transform_pairwise()
 
