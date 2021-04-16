@@ -35,8 +35,8 @@ class SemSimDataset(Dataset):
             examples = self.processor.get_test_examples(self.data_path)
         else:
             examples = self.processor.get_train_examples(self.data_path)
-        if args.limit_length is not None:
-            examples = examples[:args.limit_length]
+        if limit_length is not None:
+            examples = examples[:limit_length]
         self.features = glue_convert_examples_to_features(
             examples,
             self.tokenizer,
@@ -68,9 +68,9 @@ class PairwiseSemSimDataset(Dataset):
         self.output_mode = "classification"
         self.tokenizer = tokenizer
         self.label_list = self.processor.get_labels()
-        self.limit_length = args.limit_length
         self.max_seq_length = args.max_seq_length
         self.features = self.getFeatures(mode)
+        self.limit_length = limit_length
         self.X1, self.X2, self.Y, self.weight = self._transform_pairwise()
 
     def getFeatures(self,mode):
