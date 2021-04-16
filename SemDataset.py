@@ -20,6 +20,7 @@ class SemSimDataset(Dataset):
             self,
             args: argparse.ArgumentParser,
             tokenizer: BertTokenizer = None,
+            limit_length: Optional[int] = None,
             mode: str = "train"
     ):
         super(SemSimDataset,self).__init__()
@@ -58,6 +59,7 @@ class PairwiseSemSimDataset(Dataset):
             self,
             args: argparse.ArgumentParser = None,
             tokenizer: BertTokenizer = None,
+            limit_length: Optional[int] = None,
             mode: str = "train"
     ):
         super(PairwiseSemSimDataset, self).__init__()
