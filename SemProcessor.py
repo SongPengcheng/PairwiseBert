@@ -196,7 +196,25 @@ class SemSimProcessor(DataProcessor):
             examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
-class PairwiseSemSimProcessor(SemSimProcessor):
+class PairwiseSemSimProcessor(DataProcessor):
+
+    def _read_data(self,path):
+        fs = open(path,"r",encoding="UTF-8")
+        lines = fs.readlines()
+        return lines
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_data(os.path.join(data_dir, "train.txt")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_data(os.path.join(data_dir, "dev.txt")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_data(os.path.join(data_dir, "test.txt")), "test")
+
     def get_labels(self):
         """See base class."""
         return ["0", "1"]
