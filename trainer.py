@@ -11,6 +11,7 @@ import torch
 import argparse
 import json
 import shutil
+import numpy as np
 from pathlib import Path
 from packaging import version
 from torch.utils.data.dataset import Dataset
@@ -24,7 +25,7 @@ from transformers.optimization import AdamW,get_linear_schedule_with_warmup
 from transformers.modeling_utils import PreTrainedModel
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR, EvalPrediction, PredictionOutput, TrainOutput
 from transformers import BertForSequenceClassification, BertConfig
-from typing import Optional, Union, Any, Dict, List, NewType, Tuple
+from typing import Optional, Union, Any, Dict, List, NewType, Tuple, Callable
 from tqdm.auto import tqdm, trange
 from dataclasses import dataclass
 InputDataClass = NewType("InputDataClass", Any)
@@ -68,6 +69,8 @@ class Trainer(nn.Module):
             data_collator: Optional[DataCollator] = None,
             train_dataset: Optional[Dataset] = None,
             eval_dataset: Optional[Dataset] = None,
+            compute_metrics: Optional[Callable[[EvalPrediction], Dict]] = None,
+            prediction_loss_only=False,
     ):
         super(Trainer, self).__init__()
         self.args = args
@@ -75,6 +78,8 @@ class Trainer(nn.Module):
         self.model = model.to(self.device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
+        self.compute_metrics = compute_metrics
+        self.prediction_loss_only = prediction_loss_only
         if data_collator is not None:
             self.data_collator = data_collator
         else:
@@ -360,8 +365,11 @@ class Trainer(nn.Module):
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
         return TrainOutput(self.global_step, tr_loss / self.global_step)
 
-    def evaluate(self):
-        pass
+    def evaluate(self, eval_dataset: Optional[Dataset] = None, prediction_loss_only: Optional[bool] = None,) -> Dict[str, float]:
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        output = self._prediction_loop(eval_dataloader, description="Evaluation")
+        self._log(output.metrics)
+        return output.metrics
 
     def predict(self, dataloader: DataLoader):
         model = self.model
@@ -372,3 +380,73 @@ class Trainer(nn.Module):
             with torch.no_grad():
                 outputs = model(**inputs)
         return outputs
+
+    def _prediction_loop(
+        self, dataloader: DataLoader, description: str, prediction_loss_only: Optional[bool] = None
+    ) -> PredictionOutput:
+        prediction_loss_only = prediction_loss_only if prediction_loss_only is not None else self.prediction_loss_only
+        model = self.model
+        # multi-gpu eval
+        if self.args.n_gpu > 1:
+            model = torch.nn.DataParallel(model)
+        else:
+            model = self.model
+        batch_size = dataloader.batch_size
+        logger.info("***** Running %s *****", description)
+        logger.info("  Num examples = %d", self.num_examples(dataloader))
+        logger.info("  Batch size = %d", batch_size)
+        eval_losses: List[float] = []
+        preds: torch.Tensor = None
+        label_ids: torch.Tensor = None
+        model.eval()
+
+        for inputs in tqdm(dataloader, desc=description):
+            has_labels = any(inputs.get(k) is not None for k in ["labels", "lm_labels", "masked_lm_labels"])
+
+            for k, v in inputs.items():
+                inputs[k] = v.to(self.device)
+
+            with torch.no_grad():
+                outputs = model(**inputs)
+                if has_labels:
+                    step_eval_loss, logits = outputs[:2]
+                    eval_losses += [step_eval_loss.mean().item()]
+                else:
+                    logits = outputs[0]
+
+            if not prediction_loss_only:
+                if preds is None:
+                    preds = logits.detach()
+                else:
+                    preds = torch.cat((preds, logits.detach()), dim=0)
+                if inputs.get("labels") is not None:
+                    if label_ids is None:
+                        label_ids = inputs["labels"].detach()
+                    else:
+                        label_ids = torch.cat((label_ids, inputs["labels"].detach()), dim=0)
+
+        if self.args.local_rank != -1:
+            # In distributed mode, concatenate all results from all nodes:
+            if preds is not None:
+                preds = self.distributed_concat(preds, num_total_examples=self.num_examples(dataloader))
+            if label_ids is not None:
+                label_ids = self.distributed_concat(label_ids, num_total_examples=self.num_examples(dataloader))
+
+        if preds is not None:
+            preds = preds.cpu().numpy()
+        if label_ids is not None:
+            label_ids = label_ids.cpu().numpy()
+
+        if self.compute_metrics is not None and preds is not None and label_ids is not None:
+            metrics = self.compute_metrics(EvalPrediction(predictions=preds, label_ids=label_ids))
+        else:
+            metrics = {}
+        if len(eval_losses) > 0:
+            metrics["eval_loss"] = np.mean(eval_losses)
+
+        # Prefix all keys with eval_
+        for key in list(metrics.keys()):
+            if not key.startswith("eval_"):
+                metrics[f"eval_{key}"] = metrics.pop(key)
+
+        return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics)

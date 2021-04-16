@@ -16,16 +16,16 @@ from transformers.data.processors.utils import InputFeatures
 
 class SemSimDataset(Dataset):
     def __init__(
-            self, data_path: str = None,
-            pretrain_path: str = None,
+            self,
+            data_path: str = None,
             limit_length: Optional[int] = None,
             max_seq_length: Optional[int] = None,
+            tokenizer: BertTokenizer = None,
             mode: str = "train"
     ):
         super(SemSimDataset,self).__init__()
         self.data_path = data_path
-        self.pretrain_path = pretrain_path
-        self.tokenizer = BertTokenizer.from_pretrained(self.pretrain_path)
+        self.tokenizer = tokenizer
         self.processor = SemSimProcessor()
         self.output_mode = "classification"
         label_list = self.processor.get_labels()
@@ -57,18 +57,18 @@ class SemSimDataset(Dataset):
 
 class PairwiseSemSimDataset(Dataset):
     def __init__(
-            self, data_path: str = None,
-            pretrain_path: str = None,
+            self,
+            data_path: str = None,
+            tokenizer: BertTokenizer = None,
             limit_length: Optional[int] = None,
             max_seq_length: Optional[int] = None,
             mode: str = "train"
     ):
         super(PairwiseSemSimDataset, self).__init__()
         self.data_path = data_path
-        self.pretrain_path = pretrain_path
-        self.tokenizer = BertTokenizer.from_pretrained(self.pretrain_path)
         self.processor = PairwiseSemSimProcessor()
         self.output_mode = "classification"
+        self.tokenizer = tokenizer
         label_list = self.processor.get_labels()
         self.label_list = label_list
         self.limit_length = limit_length
