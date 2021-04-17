@@ -29,7 +29,8 @@ class SemSimDataset(Dataset):
         self.processor = SemSimProcessor()
         self.output_mode = "classification"
         self.label_list = self.processor.get_labels()
-        if mode == "dev":
+
+        if mode == "eval":
             examples = self.processor.get_dev_examples(self.data_path)
         elif mode == "test":
             examples = self.processor.get_test_examples(self.data_path)
