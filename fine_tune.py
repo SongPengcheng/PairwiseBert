@@ -65,8 +65,6 @@ def main():
     train_dataset = (
         PairwiseSemSimDataset(args, tokenizer=tokenizer, mode="train") if args.do_train else None
     )
-    print(args.task_name)
-    print(args.do_eval)
     eval_dataset = (
         SemSimDataset(args, tokenizer=tokenizer, mode="eval") if args.do_eval else None
     )
@@ -99,33 +97,33 @@ def main():
         if trainer.is_world_master():
             tokenizer.save_pretrained(args.output_dir)
 
-        # Evaluation
-        eval_results = {}
-        if args.do_eval:
-            logger.info("*** Evaluate ***")
-            # Loop to handle MNLI double evaluation (matched, mis-matched)
-            eval_datasets = [eval_dataset]
-            logger.info("dev_length:" + str(len(eval_dataset)))
-            if args.task_name == "mnli":
-                mnli_mm_data_args = dataclasses.replace(args, task_name="mnli-mm")
-                eval_datasets.append(
-                    SemSimDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="dev", cache_dir=args.cache_dir)
-                )
+    # Evaluation
+    eval_results = {}
+    if args.do_eval:
+        logger.info("*** Evaluate ***")
+        # Loop to handle MNLI double evaluation (matched, mis-matched)
+        eval_datasets = [eval_dataset]
+        logger.info("dev_length:" + str(len(eval_dataset)))
+        if args.task_name == "mnli":
+            mnli_mm_data_args = dataclasses.replace(args, task_name="mnli-mm")
+            eval_datasets.append(
+                SemSimDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="dev", cache_dir=args.cache_dir)
+            )
 
-            for eval_dataset in eval_datasets:
-                trainer.compute_metrics = build_compute_metrics_fn(eval_dataset.args.task_name)
-                eval_result = trainer.evaluate(eval_dataset=eval_dataset)
+        for eval_dataset in eval_datasets:
+            trainer.compute_metrics = build_compute_metrics_fn(eval_dataset.args.task_name)
+            eval_result = trainer.evaluate(eval_dataset=eval_dataset)
 
-                output_eval_file = os.path.join(
-                    args.output_dir, f"eval_results_{eval_dataset.args.task_name}.txt"
-                )
-                if trainer.is_world_master():
-                    with open(output_eval_file, "w") as writer:
-                        logger.info("***** Eval results {} *****".format(eval_dataset.args.task_name))
-                        for key, value in eval_result.items():
-                            logger.info("  %s = %s", key, value)
-                            writer.write("%s = %s\n" % (key, value))
-                eval_results.update(eval_result)
+            output_eval_file = os.path.join(
+                args.output_dir, f"eval_results_{eval_dataset.args.task_name}.txt"
+            )
+            if trainer.is_world_master():
+                with open(output_eval_file, "w") as writer:
+                    logger.info("***** Eval results {} *****".format(eval_dataset.args.task_name))
+                    for key, value in eval_result.items():
+                        logger.info("  %s = %s", key, value)
+                        writer.write("%s = %s\n" % (key, value))
+            eval_results.update(eval_result)
 
         if args.do_predict:
             logging.info("*** Test ***")
