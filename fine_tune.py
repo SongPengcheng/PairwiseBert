@@ -63,19 +63,13 @@ def main():
 
     # Get datasets
     train_dataset = (
-        PairwiseSemSimDataset(args, tokenizer=tokenizer, mode="train")
-        if args.do_train
-        else None
+        PairwiseSemSimDataset(args, tokenizer=tokenizer, mode="train") if args.do_train else None
     )
     eval_dataset = (
-        SemSimDataset(args, tokenizer=tokenizer, mode="eval")
-        if args.do_eval
-        else None
+        SemSimDataset(args, tokenizer=tokenizer, mode="eval") if args.do_eval else None
     )
     test_dataset = (
-        SemSimDataset(args, tokenizer=tokenizer, mode="test")
-        if args.do_predict
-        else None
+        SemSimDataset(args, tokenizer=tokenizer, mode="test") if args.do_predict else None
     )
 
     def build_compute_metrics_fn(task_name: str = None) -> Callable[[EvalPrediction], Dict]:
