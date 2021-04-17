@@ -24,7 +24,8 @@ class SemSimDataset(Dataset):
             mode: str = "train"
     ):
         super(SemSimDataset,self).__init__()
-        self.data_path = args.data_dir
+        self.args = args
+        self.data_path = self.args.data_dir
         self.tokenizer = tokenizer
         self.processor = SemSimProcessor()
         self.output_mode = "classification"
@@ -41,7 +42,7 @@ class SemSimDataset(Dataset):
         self.features = glue_convert_examples_to_features(
             examples,
             self.tokenizer,
-            max_length=args.max_seq_length,
+            max_length=self.args.max_seq_length,
             label_list=self.label_list,
             output_mode=self.output_mode,
         )
