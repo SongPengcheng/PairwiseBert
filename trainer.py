@@ -386,11 +386,6 @@ class Trainer(nn.Module):
     ) -> PredictionOutput:
         prediction_loss_only = prediction_loss_only if prediction_loss_only is not None else self.prediction_loss_only
         model = self.model
-        # multi-gpu eval
-        if self.args.n_gpu > 1:
-            model = torch.nn.DataParallel(model)
-        else:
-            model = self.model
         batch_size = dataloader.batch_size
         logger.info("***** Running %s *****", description)
         logger.info("  Num examples = %d", self.num_examples(dataloader))
@@ -450,3 +445,15 @@ class Trainer(nn.Module):
                 metrics[f"eval_{key}"] = metrics.pop(key)
 
         return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics)
+
+    def distributed_concat(self, tensor: torch.Tensor, num_total_examples: int) -> torch.Tensor:
+        assert self.args.local_rank != -1
+
+        output_tensors = [tensor.clone() for _ in range(torch.distributed.get_world_size())]
+        torch.distributed.all_gather(output_tensors, tensor)
+
+        concat = torch.cat(output_tensors, dim=0)
+
+        # truncate the dummy elements added by SequentialDistributedSampler
+        output = concat[:num_total_examples]
+        return output
