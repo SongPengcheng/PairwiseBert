@@ -150,16 +150,22 @@ class PairwiseSemSimDataset(Dataset):
                     if delta < 0:
                         delta = -delta
                     # balanced class
-                    if 1 != (-1) ** (qid_unique_idx + pos_idx + neg_idx):
+                    if self.args.loss_function == "lambda":
+                        if 1 != (-1) ** (qid_unique_idx + pos_idx + neg_idx):
+                            Features1.append(self.features[qid_start_idx + pos_idx][1])
+                            Features2.append(self.features[qid_start_idx + neg_idx][1])
+                            weight.append(delta)
+                            Y.append(1)
+                        else:
+                            Features1.append(self.features[qid_start_idx + neg_idx][1])
+                            Features2.append(self.features[qid_start_idx + pos_idx][1])
+                            weight.append(delta)
+                            Y.append(0)
+                    else:
                         Features1.append(self.features[qid_start_idx + pos_idx][1])
                         Features2.append(self.features[qid_start_idx + neg_idx][1])
                         weight.append(delta)
                         Y.append(1)
-                    else:
-                        Features1.append(self.features[qid_start_idx + neg_idx][1])
-                        Features2.append(self.features[qid_start_idx + pos_idx][1])
-                        weight.append(delta)
-                        Y.append(0)
         return Features1, Features2, Y, weight
 
     def __len__(self):

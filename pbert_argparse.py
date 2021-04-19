@@ -154,3 +154,6 @@ TrainArgsGroup.add_argument(
     '--tpu_metrics_debug', type=bool, default=False,
     help="TPU: Whether to print debug metrics"
 )
+TrainArgsGroup.add_argument(
+    '--loss_function', type=str, default="lambda"
+)

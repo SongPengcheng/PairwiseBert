@@ -170,8 +170,12 @@ class Trainer(nn.Module):
         input_1_property = self.model(**feature1)[1][:, 1]
         input_2_property = self.model(**feature2)[1][:, 1]
         output = torch.sigmoid((input_1_property - input_2_property))
-        criteran = nn.BCELoss(weight.to(self.device).view(-1))
-        loss = criteran(output.view(-1), y.to(self.device).view(-1))
+        if self.args.loss_function == "lambda":
+            criteran = nn.BCELoss()
+            loss = criteran(output.view(-1), y.to(self.device).view(-1))
+        else:
+            criteran = nn.BCELoss(weight.to(self.device).view(-1))
+            loss = criteran(output.view(-1), y.to(self.device).view(-1))
         loss.backward()
         return loss.item()
 
