@@ -62,9 +62,13 @@ def main():
     )
 
     # Get datasets
-    train_dataset = (
-        PairwiseSemSimDataset(args, tokenizer=tokenizer, mode="train") if args.do_train else None
-    )
+    if args.do_train:
+        if args.train_mode == "pointwise":
+            train_dataset = SemSimDataset(args, tokenizer=tokenizer, mode="train")
+        elif args.train_mode == "pairwise":
+            train_dataset = PairwiseSemSimDataset(args, tokenizer=tokenizer, mode="train")
+    else:
+        train_dataset = None
     eval_dataset = (
         SemSimDataset(args, tokenizer=tokenizer, mode="eval") if args.do_eval else None
     )

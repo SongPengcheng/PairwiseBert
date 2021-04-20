@@ -157,3 +157,6 @@ TrainArgsGroup.add_argument(
 TrainArgsGroup.add_argument(
     '--loss_function', type=str, default="lambda"
 )
+TrainArgsGroup.add_argument(
+    '--train_mode', type=str, default="pointwise"
+)

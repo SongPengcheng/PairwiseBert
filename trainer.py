@@ -161,7 +161,8 @@ class Trainer(nn.Module):
         """
         return len(dataloader.dataset)
 
-    def _training_step(self, inputs, optimizer):
+    def pairwise_training_step(self, inputs, optimizer):
+        self.model.train()
         feature1, feature2, y, weight = inputs
         for k, v in feature1.items():
             feature1[k] = v.to(self.device)
@@ -185,7 +186,14 @@ class Trainer(nn.Module):
             )
         loss.backward()
         return loss.item()
-
+    def pointwise_training_step(self, inputs, optimizer):
+        self.model.train()
+        for k, v in inputs.items():
+            inputs[k] = v.to(self.args.device)
+        outputs = self.model(**inputs)
+        loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
+        loss.backward()
+        return loss.item()
     def is_local_master(self) -> bool:
         return self.args.local_rank in [-1, 0]
 
@@ -320,7 +328,10 @@ class Trainer(nn.Module):
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
                     continue
-                tr_loss += self._training_step(input_tuples, optimizer)
+                if self.args.train_mode == "pointwise":
+                    tr_loss += self.pointwise_training_step(input_tuples, optimizer)
+                elif self.args.train_mode == "pairwise":
+                    tr_loss += self.pairwise_training_step(input_tuples, optimizer)
                 # 下面这个判断条件基本为true
                 if (step + 1) % self.args.gradient_accumulation_steps == 0 or (
                     # last step in epoch but step is always smaller than gradient_accumulation_steps
