@@ -268,10 +268,13 @@ class Trainer(nn.Module):
 
     def train(self, model_path: str):
         train_dataset = self.train_dataset
-        train_dataloader = self.get_pairwise_dataloader(
-            pairwise_dataset=train_dataset,
-            batchsize=self.args.train_batch_size
-        )
+        if self.args.train_mode == "pointwise":
+            train_dataloader = self.get_train_dataloader()
+        elif self.args.train_mode == "pairwise":
+            train_dataloader = self.get_pairwise_dataloader(
+                pairwise_dataset=train_dataset,
+                batchsize=self.args.train_batch_size
+            )
         t_total = int(len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs)
         num_train_epochs = self.args.num_train_epochs
         optimizer, scheduler = self.get_optimizer(num_training_steps=t_total)
