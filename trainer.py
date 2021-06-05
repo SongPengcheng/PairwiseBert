@@ -21,15 +21,17 @@ from torch.utils.data.distributed import DistributedSampler
 import torch.nn as nn
 import logging
 from transformers.data.data_collator import DataCollator, DefaultDataCollator
-from transformers.optimization import AdamW,get_linear_schedule_with_warmup
+from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 from transformers.modeling_utils import PreTrainedModel
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR, EvalPrediction, PredictionOutput, TrainOutput
 from transformers import BertForSequenceClassification, BertConfig
 from typing import Optional, Union, Any, Dict, List, NewType, Tuple, Callable
 from tqdm.auto import tqdm, trange
 from dataclasses import dataclass
+
 InputDataClass = NewType("InputDataClass", Any)
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class PairwiseDataCollator(DataCollator):
@@ -54,14 +56,20 @@ class PairwiseDataCollator(DataCollator):
                 if k not in ("label", "label_ids") and v is not None and not isinstance(v, str):
                     batch[k] = torch.tensor([getattr(d[idx], k) for d in dataset], dtype=torch.long)
             return batch
+
         def make_data_batch(dataset, idx):
             data_batch = torch.tensor([item[idx] for item in dataset], dtype=torch.float)
             return data_batch
-        return make_feature_batch(data_set, 0), make_feature_batch(data_set, 1), make_data_batch(data_set,2), make_data_batch(data_set, 3)
+
+        return make_feature_batch(data_set, 0), make_feature_batch(data_set, 1), make_data_batch(data_set,
+                                                                                                 2), make_data_batch(
+            data_set, 3)
+
 
 class Trainer(nn.Module):
     epoch: int
     global_step: int
+
     def __init__(
             self,
             args: argparse.ArgumentParser,
@@ -137,7 +145,7 @@ class Trainer(nn.Module):
         )
         return data_loader
 
-    def get_optimizer(self,num_training_steps:int):
+    def get_optimizer(self, num_training_steps: int):
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
             {
@@ -186,6 +194,7 @@ class Trainer(nn.Module):
             )
         loss.backward()
         return loss.item()
+
     def pointwise_training_step(self, inputs, optimizer):
         self.model.train()
         for k, v in inputs.items():
@@ -194,6 +203,7 @@ class Trainer(nn.Module):
         loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
         loss.backward()
         return loss.item()
+
     def is_local_master(self) -> bool:
         return self.args.local_rank in [-1, 0]
 
@@ -256,7 +266,7 @@ class Trainer(nn.Module):
         checkpoints_sorted = [checkpoint[1] for checkpoint in checkpoints_sorted]
         return checkpoints_sorted
 
-    def train(self, model_path:str):
+    def train(self, model_path: str):
         train_dataset = self.train_dataset
         train_dataloader = self.get_pairwise_dataloader(
             pairwise_dataset=train_dataset,
@@ -266,9 +276,9 @@ class Trainer(nn.Module):
         num_train_epochs = self.args.num_train_epochs
         optimizer, scheduler = self.get_optimizer(num_training_steps=t_total)
         if (
-            model_path is not None
-            and os.path.isfile(os.path.join(model_path, "optimizer.pt"))
-            and os.path.isfile(os.path.join(model_path, "scheduler.pt"))
+                model_path is not None
+                and os.path.isfile(os.path.join(model_path, "optimizer.pt"))
+                and os.path.isfile(os.path.join(model_path, "scheduler.pt"))
         ):
             # Load in optimizer and scheduler states
             optimizer.load_state_dict(
@@ -302,7 +312,7 @@ class Trainer(nn.Module):
                 self.global_step = int(model_path.split("-")[-1].split("/")[0])
                 epochs_trained = self.global_step // (len(train_dataloader) // self.args.gradient_accumulation_steps)
                 steps_trained_in_current_epoch = self.global_step % (
-                    len(train_dataloader) // self.args.gradient_accumulation_steps
+                        len(train_dataloader) // self.args.gradient_accumulation_steps
                 )
 
                 logger.info("  Continuing training from checkpoint, will skip to saved global_step")
@@ -334,9 +344,9 @@ class Trainer(nn.Module):
                     tr_loss += self.pairwise_training_step(input_tuples, optimizer)
                 # 下面这个判断条件基本为true
                 if (step + 1) % self.args.gradient_accumulation_steps == 0 or (
-                    # last step in epoch but step is always smaller than gradient_accumulation_steps
-                    len(epoch_iterator) <= self.args.gradient_accumulation_steps
-                    and (step + 1) == len(epoch_iterator)
+                        # last step in epoch but step is always smaller than gradient_accumulation_steps
+                        len(epoch_iterator) <= self.args.gradient_accumulation_steps
+                        and (step + 1) == len(epoch_iterator)
                 ):
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.max_grad_norm)
                     optimizer.step()
@@ -346,7 +356,7 @@ class Trainer(nn.Module):
                     self.epoch = epoch + (step + 1) / len(epoch_iterator)
 
                     if (self.args.logging_steps > 0 and self.global_step % self.args.logging_steps == 0) or (
-                        self.global_step == 1 and self.args.logging_first_step
+                            self.global_step == 1 and self.args.logging_first_step
                     ):
                         logs: Dict[str, float] = {}
                         logs["loss"] = (tr_loss - logging_loss) / self.args.logging_steps
@@ -387,13 +397,14 @@ class Trainer(nn.Module):
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
         return TrainOutput(self.global_step, tr_loss / self.global_step)
 
-    def evaluate(self, eval_dataset: Optional[Dataset] = None, prediction_loss_only: Optional[bool] = None,) -> Dict[str, float]:
+    def evaluate(self, eval_dataset: Optional[Dataset] = None, prediction_loss_only: Optional[bool] = None, ) -> Dict[
+        str, float]:
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
         output = self._prediction_loop(eval_dataloader, description="Evaluation")
         self._log(output.metrics)
         return output.metrics
 
-    def predict(self, dataloader: DataLoader):
+    """def predict(self, dataloader: DataLoader):
         model = self.model
         for inputs in tqdm(dataloader, desc="predict"):
             # has_labels = any(inputs.get(k) is not None for k in ["labels", "lm_labels", "masked_lm_labels"])
@@ -401,10 +412,14 @@ class Trainer(nn.Module):
                 inputs[k] = v.to(self.device)
             with torch.no_grad():
                 outputs = model(**inputs)
-        return outputs
+        return outputs"""
+
+    def predict(self, test_dataset: Dataset) -> PredictionOutput:
+        test_dataloader = self.get_test_dataloader(test_dataset)
+        return self._prediction_loop(test_dataloader, description="Prediction")
 
     def _prediction_loop(
-        self, dataloader: DataLoader, description: str, prediction_loss_only: Optional[bool] = None
+            self, dataloader: DataLoader, description: str, prediction_loss_only: Optional[bool] = None
     ) -> PredictionOutput:
         prediction_loss_only = prediction_loss_only if prediction_loss_only is not None else self.prediction_loss_only
         model = self.model

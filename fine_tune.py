@@ -17,6 +17,7 @@ from typing import Callable, Dict
 from transformers import EvalPrediction
 from sklearn.metrics import f1_score
 from transformers import BertForSequenceClassification, BertConfig, BertTokenizer
+from new_model import BertWithTextCNN
 
 def simple_accuracy(preds, labels):
     return (preds == labels).mean()
@@ -54,7 +55,7 @@ def main():
         args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
         cache_dir=args.cache_dir,
     )
-    model = BertForSequenceClassification.from_pretrained(
+    model = BertWithTextCNN.from_pretrained(
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,

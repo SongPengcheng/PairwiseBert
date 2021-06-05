@@ -65,7 +65,7 @@ if __name__ == '__main__':
     predictor,tokenizer = LoadModel(model_path)
     text_pairs = [("独立宣言的签署日期","独立宣言美国立国文书之一"),("证监会主席哪一年出生","证监会")]
     result = PredictByTextPairs(predictor,tokenizer,text_pairs)
-    print(result)
+    #print(result)
 
 
 
