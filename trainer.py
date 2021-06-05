@@ -198,7 +198,7 @@ class Trainer(nn.Module):
     def pointwise_training_step(self, inputs, optimizer):
         self.model.train()
         for k, v in inputs.items():
-            inputs[k] = v.to(self.args.device)
+            inputs[k] = v.to(self.device)
         outputs = self.model(**inputs)
         loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
         loss.backward()
