@@ -55,13 +55,20 @@ def main():
         args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
         cache_dir=args.cache_dir,
     )
-    model = BertWithTextCNN.from_pretrained(
-        args.model_name_or_path,
-        from_tf=bool(".ckpt" in args.model_name_or_path),
-        config=config,
-        cache_dir=args.cache_dir,
-    )
-
+    if args.model_type == "bert":
+        model = BertForSequenceClassification.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+            cache_dir=args.cache_dir,
+        )
+    elif args.model_type == "bertcnn":
+        model = BertWithTextCNN.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+            cache_dir=args.cache_dir,
+        )
     # Get datasets
     if args.do_train:
         if args.train_mode == "pointwise":

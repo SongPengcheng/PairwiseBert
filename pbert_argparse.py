@@ -160,3 +160,6 @@ TrainArgsGroup.add_argument(
 TrainArgsGroup.add_argument(
     '--train_mode', type=str, default="pointwise"
 )
+TrainArgsGroup.add_argument(
+    '--model_type', type=str, default=None
+)
