@@ -267,6 +267,7 @@ class Trainer(nn.Module):
         return checkpoints_sorted
 
     def train(self, model_path: str):
+        floss = open("loss.txt", "w", encoding="UTF-8")
         train_dataset = self.train_dataset
         if self.args.train_mode == "pointwise":
             train_dataloader = self.get_train_dataloader()
@@ -363,6 +364,7 @@ class Trainer(nn.Module):
                     ):
                         logs: Dict[str, float] = {}
                         logs["loss"] = (tr_loss - logging_loss) / self.args.logging_steps
+                        floss.write(str(self.global_step)+"\t"+str(logs["loss"])+"\n")
                         # backward compatibility for pytorch schedulers
                         logs["learning_rate"] = (
                             scheduler.get_last_lr()[0]
