@@ -18,11 +18,9 @@ class TextCNN(nn.Module):
         self.fc = nn.Linear(len(filter_sizes) * filter_num, self.label_num).to(self.device)  ##全连接层
     def forward(self, x):
         x = x.unsqueeze(1)  # (N,Ci,W,D)
-
         x = [torch.relu(conv(x)).squeeze(3) for conv in self.convs]  # len(Ks)*(N,Knum,W)
         x = [torch.max_pool1d(line, line.size(2)).squeeze(2) for line in x]  # len(Ks)*(N,Knum)
         x = torch.cat(x, 1)  # (N,Knum*len(Ks))
-        x = self.dropout(x)
         logit = self.fc(x)
         return logit
 
@@ -32,13 +30,13 @@ class BertWithTextCNN(BertPreTrainedModel):
         self.num_labels = config.num_labels
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.bert = BertModel(config)
-        self.textcnn = TextCNN(
-            filter_sizes=[3,4,5],
-            filter_num=2,
-            embedding_size=config.hidden_size,
-            dropout_prop=config.hidden_dropout_prob,
-            label_num=2
-        )
+        self.filter_sizes=[3,4,5],
+        self.filter_num=2,
+        self.embedding_size=config.hidden_size,
+        self.dropout_prop=config.hidden_dropout_prob,
+        self.label_num=2
+        self.convs = [nn.Conv2d(1, self.filter_num, (fsize, self.embedding_size)) for fsize in self.filter_sizes]
+        self.fc = nn.Linear(len(self.filter_sizes) * self.filter_num, self.label_num)
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -61,8 +59,12 @@ class BertWithTextCNN(BertPreTrainedModel):
             inputs_embeds=inputs_embeds,
         )
         sequence_output = outputs[0]
-        self.textcnn.to(sequence_output.device)
-        logits = self.textcnn(sequence_output)
+        sequence_output = self.dropout(sequence_output)
+        x = sequence_output.unsqueeze(1)  # (N,Ci,W,D)
+        x = [torch.relu(conv(x)).squeeze(3) for conv in self.convs]  # len(Ks)*(N,Knum,W)
+        x = [torch.max_pool1d(line, line.size(2)).squeeze(2) for line in x]  # len(Ks)*(N,Knum)
+        x = torch.cat(x, 1)  # (N,Knum*len(Ks))
+        logits = self.fc(x)
         outputs = (logits,) + outputs[2:]  # add hidden states and attention if they are here
 
         if labels is not None:

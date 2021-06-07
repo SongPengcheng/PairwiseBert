@@ -20,6 +20,7 @@ import dataclasses
 from SemDataset import PairwiseSemSimDataset, SemSimDataset
 from SemProcessor import tasks_num_labels, output_modes
 from trainer import Trainer
+from new_model import BertWithTextCNN
 from transformers import BertForSequenceClassification, BertConfig, BertTokenizer
 parse = pbert_argparse.parse
 args = parse.parse_args()
@@ -40,7 +41,7 @@ def LoadModel(model_path):
         args.model_name_or_path,
         cache_dir=args.cache_dir,
     )
-    model = BertForSequenceClassification.from_pretrained(
+    model = BertWithTextCNN.from_pretrained(
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
@@ -61,7 +62,7 @@ def PredictByTextPairs(predictor,tokenizer,text_pairs):
         return predictions
 
 if __name__ == '__main__':
-    model_path = "model"
+    model_path = "output/"
     predictor,tokenizer = LoadModel(model_path)
     text_pairs = [("独立宣言的签署日期","独立宣言美国立国文书之一"),("证监会主席哪一年出生","证监会")]
     result = PredictByTextPairs(predictor,tokenizer,text_pairs)
